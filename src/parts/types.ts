@@ -47,6 +47,8 @@ export interface Placement {
   locked: boolean;
   /** Placed from the bin by the player: deleting it returns it to the bin. */
   fromBin: boolean;
+  /** Index of the bin slot this part came from (for returning it). */
+  binSlot?: number;
   /** Rope endpoints (connector parts only). */
   link?: { a: RopeEnd; b: RopeEnd };
 }

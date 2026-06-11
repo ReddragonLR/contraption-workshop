@@ -1,58 +1,88 @@
 import './style.css';
+import '@fontsource/bungee/index.css';
+import '@fontsource/fredoka/400.css';
+import '@fontsource/fredoka/600.css';
+import '@fontsource/caveat/700.css';
 import { registerAllParts } from './parts';
-import { PlacementFactory } from './parts/placements';
-import { Simulation, type WorldSpec } from './engine/simulation';
+import { GameController, type Mode } from './modes/controller';
+import { sandboxScene } from './modes/sandbox';
 import { FixedLoop } from './engine/loop';
 import { Renderer } from './render/renderer';
+import { Toolbox } from './ui/toolbox';
+import { Hud } from './ui/hud';
+import { PointerInput } from './ui/pointerInput';
+import { showToast } from './ui/toast';
+import { installTestApi } from './testapi';
 
-// M2 demo shell: a ball drops onto ramps and lands in a bucket.
-// Replaced by the full game controller in M3.
 registerAllParts();
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `
-  <header class="topbar"><h1>Contraption Workshop</h1></header>
+  <header class="topbar"></header>
+  <aside class="bin" aria-label="Parts bin"></aside>
   <main class="stage">
-    <div class="canvas-wrap"><canvas id="game-canvas"></canvas></div>
+    <div class="canvas-wrap">
+      <canvas id="game-canvas" aria-label="Play area"></canvas>
+    </div>
   </main>
-  <footer class="bottombar">
-    <button id="btn-run">▶ Run</button>
-    <button id="btn-stop">⏹ Stop</button>
-    <button id="btn-reset">↺ Reset</button>
-  </footer>
+  <footer class="bottombar"></footer>
 `;
 
-const world: WorldSpec = { width: 960, height: 600, gravity: { x: 0, y: 1 } };
-
-function buildPlacements() {
-  const f = new PlacementFactory();
-  return [
-    f.make('ramp', 280, 250, { rotation: 14 }),
-    f.make('ramp', 620, 400, { rotation: -16 }),
-    f.make('bucket', 180, 540),
-    f.make('basketball', 200, 60),
-    f.make('bowling-ball', 700, 80),
-    f.make('tennis-ball', 420, 120),
-  ];
-}
-
-let sim = new Simulation(world, buildPlacements());
-
+const controller = new GameController();
 const canvas = document.querySelector<HTMLCanvasElement>('#game-canvas')!;
+const wrap = document.querySelector<HTMLElement>('.canvas-wrap')!;
 const renderer = new Renderer(canvas);
-renderer.setWorldSize(world.width, world.height);
+
+let muted = localStorage.getItem('cw-muted') === '1';
+
+const hooks = {
+  onRun: () => controller.run(),
+  onStop: () => controller.stop(),
+  onReset: () => controller.reset(),
+  onSpeed: (s: number) => {
+    loop.speed = s;
+  },
+  onMode: (mode: Mode) => {
+    if (mode === controller.mode) return;
+    if (mode === 'sandbox') {
+      controller.loadScene(sandboxScene(), 'sandbox');
+    } else {
+      showToast(`${mode[0].toUpperCase()}${mode.slice(1)} mode arrives in a later milestone.`);
+    }
+  },
+  onLevels: () => showToast('Level select arrives with the puzzle set.'),
+  onMute: () => {
+    muted = !muted;
+    localStorage.setItem('cw-muted', muted ? '1' : '0');
+  },
+  isMuted: () => muted,
+};
+
+const pointer = new PointerInput(canvas, wrap, controller, renderer, hooks);
+new Toolbox(document.querySelector('.bin')!, controller, (start) => pointer.beginBinDrag(start));
+new Hud(
+  document.querySelector('.topbar')!,
+  document.querySelector('.bottombar')!,
+  controller,
+  hooks,
+);
 
 const loop = new FixedLoop(
-  () => sim.step(),
-  (alpha) => renderer.render(sim, alpha),
+  () => controller.tickRun(),
+  (alpha) =>
+    renderer.render(controller.sim, controller.runState === 'running' ? alpha : 1, pointer.drawOverlay),
 );
-loop.start();
-window.addEventListener('resize', () => renderer.fit());
 
-document.querySelector('#btn-run')!.addEventListener('click', () => loop.setRunning(true));
-document.querySelector('#btn-stop')!.addEventListener('click', () => loop.setRunning(false));
-document.querySelector('#btn-reset')!.addEventListener('click', () => {
-  loop.setRunning(false);
-  sim.destroy();
-  sim = new Simulation(world, buildPlacements());
+controller.on('scene', (scene) => {
+  renderer.setWorldSize(scene.world.width, scene.world.height);
 });
+controller.on('runState', (rs) => {
+  loop.setRunning(rs === 'running');
+});
+
+new ResizeObserver(() => renderer.fit()).observe(wrap);
+
+controller.loadScene(sandboxScene(), 'sandbox');
+loop.start();
+
+installTestApi(controller, loop);

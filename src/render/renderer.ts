@@ -49,6 +49,13 @@ export class Renderer {
     return { x: (clientX - rect.left) / cssScale, y: (clientY - rect.top) / cssScale };
   }
 
+  /** World coords → CSS px relative to the canvas element's top-left. */
+  worldToScreen(wx: number, wy: number): Vec2 {
+    const rect = this.canvas.getBoundingClientRect();
+    const cssScale = rect.width / this.worldW;
+    return { x: wx * cssScale, y: wy * cssScale };
+  }
+
   render(sim: Simulation | null, alpha: number, overlay?: (g: CanvasRenderingContext2D) => void): void {
     const g = this.g;
     g.setTransform(1, 0, 0, 1, 0, 0);

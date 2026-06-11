@@ -19,6 +19,9 @@
     "deploy": "bash scripts/deploy.sh"
   },
   "dependencies": {
+    "@fontsource/bungee": "^5.2.7",
+    "@fontsource/caveat": "^5.2.8",
+    "@fontsource/fredoka": "^5.2.10",
     "matter-js": "^0.20.0"
   },
   "devDependencies": {
