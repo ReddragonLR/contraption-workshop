@@ -1,0 +1,29 @@
+{
+  "id": "level-02",
+  "title": "Special Delivery",
+  "version": 1,
+  "world": {
+    "width": 960,
+    "height": 600,
+    "gravity": { "x": 0, "y": 1 },
+    "airPressure": 1.0
+  },
+  "goal": {
+    "type": "object-in-zone",
+    "objectTag": "ball-1",
+    "zone": { "x": 786, "y": 506, "w": 68, "h": 70 },
+    "sustainMs": 400,
+    "description": "Carry the basketball to the bucket."
+  },
+  "fixedParts": [
+    { "partId": "basketball", "x": 480, "y": 60, "tag": "ball-1" },
+    { "partId": "bucket", "x": 820, "y": 548, "tag": "bucket-1" },
+    { "partId": "wall", "x": 700, "y": 480, "rotation": 90, "tag": "fence-1" }
+  ],
+  "placedParts": [],
+  "bin": [
+    { "partId": "conveyor", "count": 1, "options": { "direction": "right", "speed": 5 } },
+    { "partId": "ramp", "count": 1 }
+  ],
+  "hint": "Belts carry whatever lands on them — and fling whatever reaches the end."
+}

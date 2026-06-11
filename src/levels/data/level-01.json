@@ -1,0 +1,25 @@
+{
+  "id": "level-01",
+  "title": "Roll With It",
+  "version": 1,
+  "world": {
+    "width": 960,
+    "height": 600,
+    "gravity": { "x": 0, "y": 1 },
+    "airPressure": 1.0
+  },
+  "goal": {
+    "type": "object-in-zone",
+    "objectTag": "ball-1",
+    "zone": { "x": 616, "y": 506, "w": 68, "h": 70 },
+    "sustainMs": 400,
+    "description": "Get the basketball into the bucket."
+  },
+  "fixedParts": [
+    { "partId": "basketball", "x": 160, "y": 80, "tag": "ball-1" },
+    { "partId": "bucket", "x": 650, "y": 548, "tag": "bucket-1" }
+  ],
+  "placedParts": [],
+  "bin": [{ "partId": "ramp", "count": 2 }],
+  "hint": "Balls roll downhill. Tilt the ramps so the ball hops from one to the next."
+}

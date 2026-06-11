@@ -2,7 +2,7 @@ import type { Simulation } from './simulation';
 import { FIXED_DT_MS } from './simulation';
 
 const GRACE_MS = 1500; // let the machine start moving before judging it
-const KE_THRESHOLD = 0.25;
+const KE_THRESHOLD = 0.05; // low enough that a drifting balloon is "alive"
 const QUIET_MS = 2000;
 
 /**

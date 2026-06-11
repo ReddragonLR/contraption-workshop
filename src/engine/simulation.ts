@@ -64,6 +64,7 @@ export class Simulation implements SimulationApi {
     this.engine = Matter.Engine.create({
       positionIterations: 10,
       velocityIterations: 8,
+      constraintIterations: 10, // ropes/pulleys need stiff chains (default 2)
       enableSleeping: false,
     });
     this.engine.gravity.x = spec.gravity.x;

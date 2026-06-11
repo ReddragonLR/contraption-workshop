@@ -1,0 +1,22 @@
+{
+  "id": "level-03",
+  "title": "Updraft",
+  "version": 1,
+  "world": {
+    "width": 960,
+    "height": 600,
+    "gravity": { "x": 0, "y": 1 },
+    "airPressure": 1.0
+  },
+  "goal": {
+    "type": "object-in-zone",
+    "objectTag": "balloon-1",
+    "zone": { "x": 420, "y": 0, "w": 170, "h": 140 },
+    "sustainMs": 300,
+    "description": "Blow the balloon into the marked sky corner."
+  },
+  "fixedParts": [{ "partId": "balloon", "x": 200, "y": 500, "tag": "balloon-1" }],
+  "placedParts": [],
+  "bin": [{ "partId": "fan", "count": 1 }],
+  "hint": "Air pushes light things. The balloon hugs the ceiling — give it a breeze up there."
+}

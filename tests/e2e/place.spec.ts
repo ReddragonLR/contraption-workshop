@@ -11,6 +11,9 @@ async function canvasPoint(page: Page, wx: number, wy: number): Promise<{ x: num
 test.beforeEach(async ({ page }) => {
   await page.goto('/?test=1');
   await expect(page.locator('#game-canvas')).toBeVisible();
+  // These specs exercise free placement — use the sandbox's full bin.
+  await page.click('[data-testid=mode-sandbox]');
+  await expect(page.locator('[data-testid=bin-tile-ramp]')).toBeVisible();
 });
 
 test('drag a part from the bin onto the canvas; bin count decrements', async ({ page }) => {

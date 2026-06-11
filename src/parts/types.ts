@@ -49,8 +49,8 @@ export interface Placement {
   fromBin: boolean;
   /** Index of the bin slot this part came from (for returning it). */
   binSlot?: number;
-  /** Rope endpoints (connector parts only). */
-  link?: { a: RopeEnd; b: RopeEnd };
+  /** Rope endpoints (connector parts only), optionally routed over pulleys. */
+  link?: { a: RopeEnd; b: RopeEnd; via?: string[] };
 }
 
 export interface RopeEnd {

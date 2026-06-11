@@ -12,6 +12,11 @@ import { Toolbox } from './ui/toolbox';
 import { Hud } from './ui/hud';
 import { PointerInput } from './ui/pointerInput';
 import { showToast } from './ui/toast';
+import { bindRunModals } from './ui/modals';
+import { showLevelSelect } from './ui/levelSelect';
+import { allLevels, getLevel, nextLevelId } from './levels';
+import { levelToScene } from './levels/loader';
+import { markSolved, solvedLevels, clearProgress } from './store/progress';
 import { installTestApi } from './testapi';
 
 registerAllParts();
@@ -34,6 +39,20 @@ const wrap = document.querySelector<HTMLElement>('.canvas-wrap')!;
 const renderer = new Renderer(canvas);
 
 let muted = localStorage.getItem('cw-muted') === '1';
+let currentLevelId: string | null = null;
+
+function loadLevelById(id: string): boolean {
+  const def = getLevel(id);
+  if (!def) return false;
+  currentLevelId = id;
+  controller.loadScene(levelToScene(def), 'puzzle');
+  return true;
+}
+
+function firstUnsolvedLevelId(): string {
+  const solved = solvedLevels();
+  return (allLevels().find((l) => !solved.has(l.id)) ?? allLevels()[0]).id;
+}
 
 const hooks = {
   onRun: () => controller.run(),
@@ -46,11 +65,13 @@ const hooks = {
     if (mode === controller.mode) return;
     if (mode === 'sandbox') {
       controller.loadScene(sandboxScene(), 'sandbox');
+    } else if (mode === 'puzzle') {
+      loadLevelById(currentLevelId ?? firstUnsolvedLevelId());
     } else {
-      showToast(`${mode[0].toUpperCase()}${mode.slice(1)} mode arrives in a later milestone.`);
+      showToast('The level editor arrives in a later milestone.');
     }
   },
-  onLevels: () => showToast('Level select arrives with the puzzle set.'),
+  onLevels: () => showLevelSelect((id) => loadLevelById(id)),
   onMute: () => {
     muted = !muted;
     localStorage.setItem('cw-muted', muted ? '1' : '0');
@@ -67,10 +88,30 @@ new Hud(
   hooks,
 );
 
+bindRunModals(controller, {
+  onSolved: (levelId) => markSolved(levelId),
+  hasNextLevel: () =>
+    controller.mode === 'puzzle' && !!currentLevelId && !!nextLevelId(currentLevelId),
+  onNextLevel: () => {
+    if (currentLevelId) {
+      const next = nextLevelId(currentLevelId);
+      if (next) loadLevelById(next);
+    }
+  },
+  onLevelSelect: () => {
+    controller.reset();
+    showLevelSelect((id) => loadLevelById(id));
+  },
+});
+
 const loop = new FixedLoop(
   () => controller.tickRun(),
   (alpha) =>
-    renderer.render(controller.sim, controller.runState === 'running' ? alpha : 1, pointer.drawOverlay),
+    renderer.render(
+      controller.sim,
+      controller.runState === 'running' ? alpha : 1,
+      pointer.drawOverlay,
+    ),
 );
 
 controller.on('scene', (scene) => {
@@ -82,7 +123,14 @@ controller.on('runState', (rs) => {
 
 new ResizeObserver(() => renderer.fit()).observe(wrap);
 
-controller.loadScene(sandboxScene(), 'sandbox');
+loadLevelById(firstUnsolvedLevelId());
 loop.start();
 
-installTestApi(controller, loop);
+const api = installTestApi(controller, loop);
+if (api) {
+  api.extras.loadLevel = (id: string) => loadLevelById(id);
+  api.extras.getLevels = () => allLevels().map((l) => ({ id: l.id, title: l.title }));
+  api.extras.getSolved = () => [...solvedLevels()];
+  api.extras.clearProgress = () => clearProgress();
+  api.extras.currentLevelId = () => currentLevelId;
+}
