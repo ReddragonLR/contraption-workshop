@@ -8,6 +8,9 @@ a gloriously convoluted way — or fail hilariously.
 Built with TypeScript, [matter.js](https://brm.io/matter-js/), Vite, and an original
 flat-vector art style. No copyrighted assets from the original game are used.
 
+# Free to play
+Currently hosted [here](https://contraption-workshop.web.app/)
+
 ## Features
 
 - **Puzzle mode** — 10 hand-authored levels with a difficulty curve, win detection,
