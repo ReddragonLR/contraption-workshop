@@ -22,6 +22,7 @@ export const palette = {
   button: '#d2434b',
   win: '#58a55c',
   danger: '#d64545',
+  brass: '#e8a33d',
 };
 
 export const OUTLINE = 2.5;

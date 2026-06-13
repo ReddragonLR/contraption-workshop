@@ -1,0 +1,43 @@
+{
+  "id": "level-10",
+  "title": "The Grand Finale",
+  "version": 1,
+  "world": {
+    "width": 960,
+    "height": 600,
+    "gravity": { "x": 0, "y": 1 },
+    "airPressure": 1.0
+  },
+  "goal": {
+    "type": "all-of",
+    "description": "Park the ball in the bay AND throw the victory switch.",
+    "goals": [
+      {
+        "type": "object-in-zone",
+        "objectTag": "finale-ball",
+        "zone": { "x": 690, "y": 470, "w": 250, "h": 120 },
+        "sustainMs": 300,
+        "description": "Park the ball in the loading bay."
+      },
+      {
+        "type": "device-on",
+        "deviceTag": "victory-fan",
+        "description": "Throw the victory switch (turn on the fan)."
+      }
+    ]
+  },
+  "fixedParts": [
+    { "partId": "basketball", "x": 140, "y": 70, "tag": "finale-ball" },
+    { "partId": "conveyor", "x": 430, "y": 330, "rotation": 0, "tag": "belt", "options": { "direction": "right", "speed": 5 } },
+    { "partId": "wall", "x": 630, "y": 540, "rotation": 90, "tag": "barrier-lo" },
+    { "partId": "wall", "x": 630, "y": 460, "rotation": 90, "tag": "barrier-hi" },
+    { "partId": "button", "x": 770, "y": 586, "tag": "the-switch", "options": { "powers": "victory-fan" } },
+    { "partId": "fan", "x": 110, "y": 540, "rotation": 0, "tag": "victory-fan", "options": { "startsOn": false } }
+  ],
+  "placedParts": [],
+  "bin": [
+    { "partId": "ramp", "count": 3 },
+    { "partId": "trampoline", "count": 1 }
+  ],
+  "hint": "One trip does it all: feed the ball onto the belt. It flings over the wall, rolls across the victory switch, and settles in the bay — lighting up the fan on its way."
+}

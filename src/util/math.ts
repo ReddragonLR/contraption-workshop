@@ -56,6 +56,15 @@ export function snap(v: number, step: number): number {
   return Math.round(v / step) * step;
 }
 
+/** Distance from point `p` to the segment a–b. */
+export function pointSegmentDist(p: Vec2, a: Vec2, b: Vec2): number {
+  const abx = b.x - a.x;
+  const aby = b.y - a.y;
+  const len2 = abx * abx + aby * aby;
+  const t = len2 === 0 ? 0 : clamp(((p.x - a.x) * abx + (p.y - a.y) * aby) / len2, 0, 1);
+  return Math.hypot(p.x - (a.x + abx * t), p.y - (a.y + aby * t));
+}
+
 /**
  * Test whether a point lies inside an oriented box (center cx,cy; full size w,h;
  * rotated by `rad`). Used for wind fields and oriented hit tests.

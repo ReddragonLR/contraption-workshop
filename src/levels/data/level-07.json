@@ -1,0 +1,41 @@
+{
+  "id": "level-07",
+  "title": "Counterweight",
+  "version": 1,
+  "world": {
+    "width": 960,
+    "height": 600,
+    "gravity": { "x": 0, "y": 1 },
+    "airPressure": 1.0
+  },
+  "goal": {
+    "type": "object-in-zone",
+    "objectTag": "cargo",
+    "zone": { "x": 360, "y": 190, "w": 150, "h": 180 },
+    "sustainMs": 250,
+    "description": "Hoist the tennis ball up to the marked window."
+  },
+  "fixedParts": [
+    { "partId": "pulley", "x": 430, "y": 130, "tag": "pulley-1" },
+    { "partId": "tennis-ball", "x": 430, "y": 575, "tag": "cargo" },
+    { "partId": "bowling-ball", "x": 250, "y": 256, "tag": "weight" },
+    { "partId": "wall", "x": 240, "y": 296, "tag": "perch" },
+    {
+      "partId": "rope",
+      "x": 345,
+      "y": 150,
+      "tag": "hoist",
+      "link": {
+        "a": { "ref": "weight", "anchorId": "center" },
+        "b": { "ref": "cargo", "anchorId": "center" },
+        "via": ["pulley-1"]
+      }
+    }
+  ],
+  "placedParts": [],
+  "bin": [
+    { "partId": "bowling-ball", "count": 1 },
+    { "partId": "ramp", "count": 2 }
+  ],
+  "hint": "The tennis ball is roped to the bowling ball over the pulley. Whatever falls on one end hauls the other up — so shove that bowling ball off its narrow perch."
+}

@@ -5,9 +5,10 @@ import { getPart, partFootprint } from '../parts/registry';
 import { runtimeOf } from '../parts/helpers';
 import { PlacementFactory } from '../parts/placements';
 import type { OptionValue, Placement } from '../parts/types';
-import { degToRad } from '../util/math';
+import { degToRad, pointSegmentDist } from '../util/math';
 import { WinDetector, type GoalDef } from '../engine/winDetect';
 import { SettleDetector } from '../engine/settle';
+import { ropeRoutePoints } from '../parts/defs/rope';
 
 export type RunState = 'editing' | 'running' | 'won' | 'settled';
 export type Mode = 'puzzle' | 'sandbox' | 'editor';
@@ -30,12 +31,18 @@ export interface SceneSetup {
   hint?: string;
 }
 
+export type ControllerAction = 'placed' | 'removed' | 'rotated' | 'moved' | 'denied';
+
 export interface ControllerEvents extends Record<string, unknown> {
   /** Anything visible changed: placements, bin, selection, run state. */
   change: void;
   runState: RunState;
   scene: SceneSetup;
   toast: string;
+  /** Editing actions, for SFX feedback. */
+  action: ControllerAction;
+  /** Forwarded simulation events while running (collision, pop, cut…). */
+  simEvent: { name: string; payload?: unknown };
 }
 
 const MAX_RUN_MS = 60_000;
@@ -137,7 +144,10 @@ export class GameController extends Emitter<ControllerEvents> {
     if (!this.editing) return null;
     const slot = this.bin[slotIndex];
     if (!slot || slot.count <= 0) return null;
-    if (!this.canPlace(slot.partId, x, y, rotation)) return null;
+    if (!this.canPlace(slot.partId, x, y, rotation)) {
+      this.emit('action', 'denied');
+      return null;
+    }
     const placement = this.factory.make(slot.partId, x, y, {
       rotation,
       options: slot.options,
@@ -148,6 +158,32 @@ export class GameController extends Emitter<ControllerEvents> {
     slot.count--;
     this.rebuildEditSim();
     this.selectedId = placement.instanceId;
+    this.emit('action', 'placed');
+    this.emit('change', undefined);
+    return placement;
+  }
+
+  /** Place a connector (rope) from the bin, tying two anchors together. */
+  placeRope(
+    slotIndex: number,
+    link: NonNullable<Placement['link']>,
+    x: number,
+    y: number,
+  ): Placement | null {
+    if (!this.editing) return null;
+    const slot = this.bin[slotIndex];
+    if (!slot || slot.count <= 0 || !getPart(slot.partId).connector) return null;
+    if (link.a.ref === link.b.ref) return null;
+    const placement = this.factory.make(slot.partId, x, y, {
+      options: slot.options,
+      fromBin: true,
+      link,
+    });
+    placement.binSlot = slotIndex;
+    this.placements.push(placement);
+    slot.count--;
+    this.rebuildEditSim();
+    this.emit('action', 'placed');
     this.emit('change', undefined);
     return placement;
   }
@@ -162,11 +198,15 @@ export class GameController extends Emitter<ControllerEvents> {
     if (!this.editing) return false;
     const p = this.placementById(instanceId);
     if (!p || p.locked) return false;
-    if (!this.canPlace(p.partId, x, y, rotation, instanceId)) return false;
+    if (!this.canPlace(p.partId, x, y, rotation, instanceId)) {
+      this.emit('action', 'denied');
+      return false;
+    }
     p.x = x;
     p.y = y;
     p.rotation = rotation;
     this.rebuildEditSim();
+    this.emit('action', 'moved');
     this.emit('change', undefined);
     return true;
   }
@@ -177,9 +217,13 @@ export class GameController extends Emitter<ControllerEvents> {
     if (!p || p.locked) return false;
     if (!getPart(p.partId).rotatable) return false;
     const next = (((p.rotation + deltaDeg) % 360) + 360) % 360;
-    if (!this.canPlace(p.partId, p.x, p.y, next, instanceId)) return false;
+    if (!this.canPlace(p.partId, p.x, p.y, next, instanceId)) {
+      this.emit('action', 'denied');
+      return false;
+    }
     p.rotation = next;
     this.rebuildEditSim();
+    this.emit('action', 'rotated');
     this.emit('change', undefined);
     return true;
   }
@@ -211,6 +255,7 @@ export class GameController extends Emitter<ControllerEvents> {
     if (p.binSlot !== undefined && this.bin[p.binSlot]) this.bin[p.binSlot].count++;
     if (this.selectedId === instanceId) this.selectedId = null;
     this.rebuildEditSim();
+    this.emit('action', 'removed');
     this.emit('change', undefined);
     return true;
   }
@@ -221,7 +266,7 @@ export class GameController extends Emitter<ControllerEvents> {
     this.emit('change', undefined);
   }
 
-  /** Hit-test a world point against movable (or any) placed parts. */
+  /** Hit-test a world point against placed parts (including rope lines). */
   hitTest(x: number, y: number): Placement | null {
     if (!this.sim) return null;
     const bodies = Matter.Query.point(
@@ -231,6 +276,15 @@ export class GameController extends Emitter<ControllerEvents> {
     for (const body of bodies) {
       const rt = runtimeOf(body);
       if (rt) return rt.placement;
+    }
+    // Ropes have no bodies — test against their polylines.
+    for (const rt of this.sim.allRuntimes()) {
+      if (rt.def.id !== 'rope') continue;
+      const pts = ropeRoutePoints(rt);
+      if (!pts) continue;
+      for (let i = 0; i < pts.length - 1; i++) {
+        if (pointSegmentDist({ x, y }, pts[i], pts[i + 1]) < 8) return rt.placement;
+      }
     }
     return null;
   }
@@ -242,6 +296,9 @@ export class GameController extends Emitter<ControllerEvents> {
     this.selectedId = null;
     this.sim?.destroy();
     this.sim = new Simulation(this.scene.world, this.placements);
+    for (const name of ['collision', 'bounce', 'balloon-pop', 'rope-cut', 'device-on', 'button-press'] as const) {
+      this.sim.on(name, (payload) => this.emit('simEvent', { name, payload }));
+    }
     this.runSteps = 0;
     this.wonLatch = false;
     this.winDetector = this.scene.goal ? new WinDetector(this.scene.goal, this.sim) : null;

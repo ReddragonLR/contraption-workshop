@@ -1,0 +1,63 @@
+{
+  "id": "level-04",
+  "title": "Pop Fly",
+  "version": 1,
+  "world": {
+    "width": 960,
+    "height": 600,
+    "gravity": {
+      "x": 0,
+      "y": 1
+    },
+    "airPressure": 1.0
+  },
+  "goal": {
+    "type": "object-in-zone",
+    "objectTag": "tennis",
+    "zone": {
+      "x": 280,
+      "y": 100,
+      "w": 320,
+      "h": 300
+    },
+    "sustainMs": 0,
+    "description": "Launch the tennis ball high into the floating target."
+  },
+  "fixedParts": [
+    {
+      "partId": "tennis-ball",
+      "x": 360,
+      "y": 520,
+      "tag": "tennis"
+    },
+    {
+      "partId": "bowling-ball",
+      "x": 700,
+      "y": 60,
+      "tag": "bowler"
+    },
+    {
+      "partId": "wall",
+      "x": 330,
+      "y": 550,
+      "rotation": 90,
+      "tag": "backstop"
+    }
+  ],
+  "placedParts": [],
+  "bin": [
+    {
+      "partId": "seesaw",
+      "count": 1
+    },
+    {
+      "partId": "ramp",
+      "count": 1
+    },
+    {
+      "partId": "trampoline",
+      "count": 1
+    }
+  ],
+  "hint": "A seesaw turns a heavy thud on one end into a mighty flick on the other."
+}

@@ -48,6 +48,13 @@ function pathLength(pts: Matter.Vector[]): number {
 const SOLVER_ITERATIONS = 3;
 const POSITION_RELAX = 0.7;
 
+/** Current rope polyline (for hit-testing and UI), or null if unbuilt/severed. */
+export function ropeRoutePoints(rt: PartRuntime): Matter.Vector[] | null {
+  const state = rt.state as unknown as RopeState;
+  if (!state.endA || !state.endB || state.severed) return null;
+  return routePoints(state);
+}
+
 /**
  * Rope: an inextensible tie between two part anchors, optionally routed over
  * pulleys (`link.via`). Implemented as a custom unilateral constraint on the

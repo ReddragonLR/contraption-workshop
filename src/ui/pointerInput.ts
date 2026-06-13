@@ -4,8 +4,24 @@ import type { BinDragStart } from './toolbox';
 import { getPart } from '../parts/registry';
 import { drawGhost } from './ghost';
 import { showToast } from './toast';
-import { snap } from '../util/math';
+import { pointSegmentDist, rotateVec, snap, type Vec2 } from '../util/math';
 import { palette } from '../parts/palette';
+
+const ANCHOR_PICK_RADIUS = 26;
+const ROPE_VIA_RADIUS = 32;
+
+interface AnchorHit {
+  instanceId: string;
+  anchorId: string;
+  x: number;
+  y: number;
+}
+
+interface RopeFlow {
+  slotIndex: number;
+  a: AnchorHit | null;
+  cursor: Vec2 | null;
+}
 
 const GRID = 10;
 const ROT_STEP = 15;
@@ -41,6 +57,8 @@ export interface PointerHooks {
  * keyboard rotation, delete, run shortcuts (PRD §9 Controls).
  */
 export class PointerInput {
+  /** While true (editor zone-drawing), canvas input is handed elsewhere. */
+  suspended = false;
   private drag: DragState | null = null;
   private toolbar: HTMLElement;
 
@@ -61,8 +79,17 @@ export class PointerInput {
     controller.on('runState', () => this.positionToolbar());
   }
 
+  private ropeFlow: RopeFlow | null = null;
+
   /** Entry point for drags that begin on a toolbox tile. */
   beginBinDrag(start: BinDragStart): void {
+    if (getPart(start.partId).connector) {
+      // Ropes aren't dragged — they're tied between two anchor points.
+      this.ropeFlow = { slotIndex: start.slotIndex, a: null, cursor: null };
+      this.controller.select(null);
+      showToast('Tie the rope: click the first anchor point (◎).');
+      return;
+    }
     this.drag = {
       kind: 'bin',
       partId: start.partId,
@@ -76,15 +103,122 @@ export class PointerInput {
     };
   }
 
+  /** All tie-able anchor points in the current scene (world coords). */
+  private anchorPoints(): AnchorHit[] {
+    const out: AnchorHit[] = [];
+    for (const p of this.controller.placements) {
+      const def = getPart(p.partId);
+      if (def.connector || !def.anchors?.length) continue;
+      const rad = (p.rotation * Math.PI) / 180;
+      for (const a of def.anchors) {
+        const w = rotateVec({ x: a.x, y: a.y }, rad);
+        out.push({ instanceId: p.instanceId, anchorId: a.id, x: p.x + w.x, y: p.y + w.y });
+      }
+    }
+    return out;
+  }
+
+  private nearestAnchor(wx: number, wy: number): AnchorHit | null {
+    let best: AnchorHit | null = null;
+    let bestD = ANCHOR_PICK_RADIUS;
+    for (const a of this.anchorPoints()) {
+      const d = Math.hypot(a.x - wx, a.y - wy);
+      if (d < bestD) {
+        bestD = d;
+        best = a;
+      }
+    }
+    return best;
+  }
+
+  private handleRopeClick(wx: number, wy: number): void {
+    const flow = this.ropeFlow!;
+    const hit = this.nearestAnchor(wx, wy);
+    if (!hit) {
+      showToast('No anchor there — click a part’s ◎ anchor point (Esc cancels).');
+      return;
+    }
+    if (!flow.a) {
+      flow.a = hit;
+      showToast('Now click the second anchor point.');
+      return;
+    }
+    if (hit.instanceId === flow.a.instanceId) {
+      showToast('Pick an anchor on a different part.');
+      return;
+    }
+    // Route over any pulleys sitting near the line between the two anchors.
+    const via = this.controller.placements
+      .filter((p) => p.partId === 'pulley')
+      .map((p) => ({
+        ref: p.tag ?? p.instanceId,
+        t:
+          ((p.x - flow.a!.x) * (hit.x - flow.a!.x) + (p.y - flow.a!.y) * (hit.y - flow.a!.y)) /
+          (Math.hypot(hit.x - flow.a!.x, hit.y - flow.a!.y) ** 2 || 1),
+        d: pointSegmentDist({ x: p.x, y: p.y }, flow.a!, hit),
+      }))
+      .filter((c) => c.d < ROPE_VIA_RADIUS && c.t > 0.02 && c.t < 0.98)
+      .sort((a, b) => a.t - b.t)
+      .map((c) => c.ref);
+    const placed = this.controller.placeRope(
+      flow.slotIndex,
+      {
+        a: { ref: flow.a.instanceId, anchorId: flow.a.anchorId },
+        b: { ref: hit.instanceId, anchorId: hit.anchorId },
+        via: via.length ? via : undefined,
+      },
+      snap((flow.a.x + hit.x) / 2, GRID),
+      snap((flow.a.y + hit.y) / 2, GRID),
+    );
+    this.ropeFlow = null;
+    if (placed) {
+      showToast(via.length ? 'Rope tied — routed over the pulley!' : 'Rope tied.');
+    } else {
+      showToast('Could not tie the rope there.');
+    }
+  }
+
   /** Overlay drawn by the renderer each frame (world space). */
   drawOverlay = (g: CanvasRenderingContext2D): void => {
     this.drawSelection(g);
+    this.drawRopeFlow(g);
     const d = this.drag;
     if (d && d.wx !== null && d.wy !== null) {
       const valid = this.controller.canPlace(d.partId, d.wx, d.wy, d.rotation, d.instanceId);
       drawGhost(g, d.partId, d.wx, d.wy, d.rotation, valid);
     }
   };
+
+  private drawRopeFlow(g: CanvasRenderingContext2D): void {
+    const flow = this.ropeFlow;
+    if (!flow) return;
+    g.save();
+    for (const a of this.anchorPoints()) {
+      const isA = flow.a && a.instanceId === flow.a.instanceId && a.anchorId === flow.a.anchorId;
+      g.strokeStyle = isA ? palette.win : palette.rope;
+      g.fillStyle = 'rgba(246,241,227,0.85)';
+      g.lineWidth = isA ? 3.5 : 2.5;
+      g.beginPath();
+      g.arc(a.x, a.y, isA ? 10 : 7, 0, Math.PI * 2);
+      g.fill();
+      g.stroke();
+      g.fillStyle = palette.ink;
+      g.beginPath();
+      g.arc(a.x, a.y, 2.5, 0, Math.PI * 2);
+      g.fill();
+    }
+    if (flow.a && flow.cursor) {
+      g.strokeStyle = palette.rope;
+      g.lineWidth = 3;
+      g.setLineDash([8, 6]);
+      g.beginPath();
+      g.moveTo(flow.a.x, flow.a.y);
+      g.lineTo(flow.cursor.x, flow.cursor.y);
+      g.stroke();
+      g.setLineDash([]);
+    }
+    g.restore();
+  }
 
   private drawSelection(g: CanvasRenderingContext2D): void {
     const sel = this.selectedRuntimeBounds();
@@ -168,10 +302,14 @@ export class PointerInput {
   // ── Pointer events ───────────────────────────────────────────────
 
   private onCanvasDown = (e: PointerEvent): void => {
-    if (e.button !== 0) return;
+    if (e.button !== 0 || this.suspended) return;
     const c = this.controller;
     const w = this.renderer.screenToWorld(e.clientX, e.clientY);
     if (!c.editing) return;
+    if (this.ropeFlow) {
+      this.handleRopeClick(w.x, w.y);
+      return;
+    }
     const hit = c.hitTest(w.x, w.y);
     if (hit && !hit.locked) {
       this.drag = {
@@ -196,6 +334,12 @@ export class PointerInput {
   };
 
   private onMove = (e: PointerEvent): void => {
+    if (this.suspended) return;
+    if (this.ropeFlow) {
+      const w = this.renderer.screenToWorld(e.clientX, e.clientY);
+      this.ropeFlow.cursor = w;
+      return;
+    }
     const d = this.drag;
     if (!d) return;
     if (
@@ -283,6 +427,10 @@ export class PointerInput {
         if (c.selectedId && c.editing) this.tryRotate(c.selectedId, ROT_STEP);
         break;
       case 'Escape':
+        if (this.ropeFlow) {
+          this.ropeFlow = null;
+          showToast('Rope cancelled.');
+        }
         this.drag = null;
         c.select(null);
         this.positionToolbar();

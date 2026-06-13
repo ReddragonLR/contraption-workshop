@@ -1,0 +1,30 @@
+{
+  "id": "level-09",
+  "title": "Assembly Line",
+  "version": 1,
+  "world": {
+    "width": 960,
+    "height": 600,
+    "gravity": { "x": 0, "y": 1 },
+    "airPressure": 1.0
+  },
+  "goal": {
+    "type": "object-in-zone",
+    "objectTag": "widget",
+    "zone": { "x": 690, "y": 470, "w": 250, "h": 120 },
+    "sustainMs": 300,
+    "description": "Send the ball down the line to the far loading bay."
+  },
+  "fixedParts": [
+    { "partId": "basketball", "x": 140, "y": 70, "tag": "widget" },
+    { "partId": "conveyor", "x": 430, "y": 330, "rotation": 0, "tag": "belt", "options": { "direction": "right", "speed": 5 } },
+    { "partId": "wall", "x": 630, "y": 540, "rotation": 90, "tag": "barrier-lo" },
+    { "partId": "wall", "x": 630, "y": 460, "rotation": 90, "tag": "barrier-hi" }
+  ],
+  "placedParts": [],
+  "bin": [
+    { "partId": "ramp", "count": 3 },
+    { "partId": "trampoline", "count": 1 }
+  ],
+  "hint": "Feed the ball onto the belt and let it ride. The belt flings it off the end — fast enough to clear the wall and reach the bay beyond."
+}

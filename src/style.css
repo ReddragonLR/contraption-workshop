@@ -476,3 +476,91 @@ canvas#game-canvas {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ── Level editor panel ──────────────────────────────── */
+.editor-panel {
+  position: fixed;
+  top: 64px;
+  right: 12px;
+  width: 270px;
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
+  background: var(--navy-2);
+  border: 3px solid rgba(0, 0, 0, 0.4);
+  border-radius: 12px;
+  padding: 12px;
+  z-index: 20;
+  font-size: 0.85rem;
+}
+.editor-panel.hidden,
+.hidden {
+  display: none !important;
+}
+.editor-panel h3 {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  color: var(--brass);
+  margin: 2px 0 10px;
+}
+.editor-panel label {
+  display: block;
+  margin: 6px 0;
+}
+.editor-panel input[type='text'],
+.editor-panel input:not([type]),
+.editor-panel input[type='number'],
+.editor-panel select {
+  width: 100%;
+  font: inherit;
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  margin-top: 2px;
+}
+.editor-panel input[type='checkbox'] {
+  width: auto;
+  margin-right: 6px;
+}
+.editor-panel fieldset {
+  border: 2px solid rgba(246, 241, 227, 0.25);
+  border-radius: 8px;
+  margin: 10px 0;
+  padding: 6px 10px 10px;
+}
+.editor-panel legend {
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  opacity: 0.75;
+  padding: 0 6px;
+}
+.editor-panel button {
+  padding: 5px 10px;
+  font-size: 0.82rem;
+  margin: 4px 2px 0 0;
+}
+.ed-dim {
+  opacity: 0.6;
+  font-size: 0.78rem;
+}
+.ed-bin-row {
+  display: grid;
+  grid-template-columns: 1fr 58px 30px;
+  gap: 4px;
+  align-items: center;
+  margin: 4px 0;
+}
+.ed-actions {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.back-to-editor {
+  position: fixed;
+  top: 64px;
+  right: 12px;
+  z-index: 21;
+}

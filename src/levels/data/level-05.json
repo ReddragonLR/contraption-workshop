@@ -1,0 +1,96 @@
+{
+  "id": "level-05",
+  "title": "Air Mail",
+  "version": 1,
+  "world": {
+    "width": 960,
+    "height": 600,
+    "gravity": {
+      "x": 0,
+      "y": 1
+    },
+    "airPressure": 1.0
+  },
+  "goal": {
+    "type": "object-in-zone",
+    "objectTag": "ball-1",
+    "zone": {
+      "x": 756,
+      "y": 400,
+      "w": 68,
+      "h": 64
+    },
+    "sustainMs": 400,
+    "description": "Post the basketball into the bucket on the pedestal."
+  },
+  "fixedParts": [
+    {
+      "partId": "basketball",
+      "x": 80,
+      "y": 60,
+      "tag": "ball-1"
+    },
+    {
+      "partId": "wall",
+      "x": 500,
+      "y": 180,
+      "tag": "awning"
+    },
+    {
+      "partId": "wall",
+      "x": 560,
+      "y": 550,
+      "rotation": 90,
+      "tag": "barrier-low"
+    },
+    {
+      "partId": "wall",
+      "x": 560,
+      "y": 450,
+      "rotation": 90,
+      "tag": "barrier-mid"
+    },
+    {
+      "partId": "wall",
+      "x": 560,
+      "y": 380,
+      "rotation": 90,
+      "tag": "barrier-high"
+    },
+    {
+      "partId": "wall",
+      "x": 790,
+      "y": 550,
+      "rotation": 90,
+      "tag": "pedestal-column"
+    },
+    {
+      "partId": "wall",
+      "x": 790,
+      "y": 490,
+      "tag": "pedestal-cap"
+    },
+    {
+      "partId": "bucket",
+      "x": 790,
+      "y": 435,
+      "tag": "bucket-1"
+    }
+  ],
+  "placedParts": [],
+  "bin": [
+    {
+      "partId": "trampoline",
+      "count": 1
+    },
+    {
+      "partId": "ramp",
+      "count": 1
+    },
+    {
+      "partId": "wall",
+      "count": 1
+    }
+  ],
+  "hint": "That wall is too tall to roll over. Give the ball a running start \u2014 and something springy to land on."
+}

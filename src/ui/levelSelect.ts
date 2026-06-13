@@ -2,27 +2,31 @@ import { allLevels } from '../levels';
 import { solvedLevels } from '../store/progress';
 import { closeModal, showModal } from './modals';
 
-/** Level-select grid with solved checkmarks (PRD §9). */
-export function showLevelSelect(onPick: (levelId: string) => void): void {
+/** Level-select grid with solved checkmarks + custom levels (PRD §9). */
+export function showLevelSelect(
+  onPick: (levelId: string) => void,
+  customs: { id: string; title: string }[] = [],
+): void {
   const solved = solvedLevels();
   const grid = document.createElement('div');
   grid.className = 'level-grid';
-  allLevels().forEach((lvl, i) => {
+  const addCard = (id: string, num: string, title: string): void => {
     const card = document.createElement('button');
     card.className = 'level-card';
-    card.dataset.testid = `level-card-${lvl.id}`;
-    const isSolved = solved.has(lvl.id);
+    card.dataset.testid = `level-card-${id}`;
     card.innerHTML = `
-      <span class="num">#${String(i + 1).padStart(2, '0')}</span>
-      <span class="name">${lvl.title}</span>
-      <span class="check">${isSolved ? '✓ Solved' : ''}</span>
+      <span class="num">${num}</span>
+      <span class="name">${title}</span>
+      <span class="check">${solved.has(id) ? '✓ Solved' : ''}</span>
     `;
     card.addEventListener('click', () => {
       closeModal();
-      onPick(lvl.id);
+      onPick(id);
     });
     grid.appendChild(card);
-  });
+  };
+  allLevels().forEach((lvl, i) => addCard(lvl.id, `#${String(i + 1).padStart(2, '0')}`, lvl.title));
+  customs.forEach((lvl) => addCard(lvl.id, '🔧', lvl.title));
   showModal({
     testid: 'modal-levels',
     title: 'Choose a Puzzle',

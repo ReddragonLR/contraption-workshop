@@ -1,0 +1,36 @@
+{
+  "id": "level-06",
+  "title": "Pressing Engagement",
+  "version": 1,
+  "world": {
+    "width": 960,
+    "height": 600,
+    "gravity": { "x": 0, "y": 1 },
+    "airPressure": 1.0
+  },
+  "goal": {
+    "type": "device-on",
+    "deviceTag": "big-fan",
+    "description": "Turn on the fan — the balloon has been waiting all day for a breeze."
+  },
+  "fixedParts": [
+    { "partId": "fan", "x": 60, "y": 50, "tag": "big-fan", "options": { "startsOn": false } },
+    { "partId": "balloon", "x": 300, "y": 120, "tag": "show-balloon" },
+    { "partId": "bowling-ball", "x": 140, "y": 60, "tag": "ball-1" },
+    { "partId": "wall", "x": 660, "y": 550, "rotation": 90, "tag": "fence-left" },
+    { "partId": "wall", "x": 860, "y": 550, "rotation": 90, "tag": "fence-right" },
+    {
+      "partId": "button",
+      "x": 760,
+      "y": 590,
+      "tag": "the-button",
+      "options": { "powers": "big-fan" }
+    }
+  ],
+  "placedParts": [],
+  "bin": [
+    { "partId": "ramp", "count": 2 },
+    { "partId": "conveyor", "count": 1, "options": { "direction": "right", "speed": 5 } }
+  ],
+  "hint": "Fans need power. That plate between the fences is the switch — but nothing heavy ever lands on it by accident."
+}

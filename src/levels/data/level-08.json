@@ -1,0 +1,28 @@
+{
+  "id": "level-08",
+  "title": "Reunion",
+  "version": 1,
+  "world": {
+    "width": 960,
+    "height": 600,
+    "gravity": { "x": 0, "y": 1 },
+    "airPressure": 1.0
+  },
+  "goal": {
+    "type": "objects-collide",
+    "tagA": "buddy-a",
+    "tagB": "buddy-b",
+    "description": "Reunite the two basketballs."
+  },
+  "fixedParts": [
+    { "partId": "basketball", "x": 170, "y": 80, "tag": "buddy-a" },
+    { "partId": "basketball", "x": 790, "y": 80, "tag": "buddy-b" },
+    { "partId": "ramp", "x": 400, "y": 505, "rotation": 16, "tag": "valley-l" },
+    { "partId": "ramp", "x": 560, "y": 505, "rotation": 344, "tag": "valley-r" }
+  ],
+  "placedParts": [],
+  "bin": [
+    { "partId": "ramp", "count": 4 }
+  ],
+  "hint": "There's a funnel waiting in the middle. Build a slope from each corner to roll both friends down into it — they'll meet at the bottom."
+}

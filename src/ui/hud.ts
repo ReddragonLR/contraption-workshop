@@ -1,4 +1,5 @@
 import type { GameController, Mode } from '../modes/controller';
+import { showToast } from './toast';
 
 export interface HudHooks {
   onRun(): void;
@@ -43,6 +44,7 @@ export class Hud {
         <span class="goal-note" data-testid="goal-text"></span>
       </div>
       <div class="actions">
+        <button class="ghosted" data-testid="btn-hint" title="Show hint" aria-label="Show hint">💡</button>
         <button data-testid="btn-levels" title="Choose a puzzle">Levels</button>
         <div class="seg" role="group" aria-label="Mode">
           <button data-mode="puzzle" data-testid="mode-puzzle">Puzzle</button>
@@ -54,6 +56,9 @@ export class Hud {
     `;
     this.top.querySelector('[data-testid=btn-levels]')!.addEventListener('click', () => {
       this.hooks.onLevels();
+    });
+    this.top.querySelector('[data-testid=btn-hint]')!.addEventListener('click', () => {
+      showToast(this.controller.scene?.hint ?? 'No hint for this one — wing it!');
     });
     this.top.querySelectorAll<HTMLButtonElement>('.seg button').forEach((btn) => {
       btn.addEventListener('click', () => this.hooks.onMode(btn.dataset.mode as Mode));
@@ -97,6 +102,9 @@ export class Hud {
     const goal = this.top.querySelector('[data-testid=goal-text]')!;
     title.textContent = c.scene?.title ?? '';
     goal.textContent = c.scene?.goalDescription ? `“${c.scene.goalDescription}”` : '';
+    (goal as HTMLElement).title = c.scene?.goalDescription ?? '';
+    const hintBtn = this.top.querySelector<HTMLElement>('[data-testid=btn-hint]')!;
+    hintBtn.style.visibility = c.scene?.hint ? 'visible' : 'hidden';
     this.top.querySelectorAll<HTMLButtonElement>('.seg button').forEach((btn) => {
       btn.setAttribute('aria-pressed', String(btn.dataset.mode === c.mode));
     });
