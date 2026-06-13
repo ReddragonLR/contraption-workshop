@@ -1,5 +1,5 @@
 import type { GoalDef, LevelDef, LevelPartEntry } from './types';
-import { hasPart } from '../parts/registry';
+import { getPart, hasPart } from '../parts/registry';
 
 /**
  * Hand-written runtime validator (PRD §8). Throws a single Error listing
@@ -66,6 +66,33 @@ export function validateLevel(data: unknown): LevelDef {
         const e = entry.link[end];
         if (!e || typeof e.ref !== 'string' || typeof e.anchorId !== 'string') {
           errors.push(`${where}: link.${end} needs ref and anchorId`);
+        }
+      }
+    }
+    // Validate option values against the part's declared spec so malformed
+    // JSON can't inject NaN/garbage into the physics step.
+    if (entry.options && typeof entry.partId === 'string' && hasPart(entry.partId)) {
+      const specs = getPart(entry.partId).options ?? [];
+      for (const [key, value] of Object.entries(entry.options)) {
+        const spec = specs.find((s) => s.key === key);
+        if (!spec) {
+          errors.push(`${where}: unknown option "${key}" for ${entry.partId}`);
+          continue;
+        }
+        if (spec.type === 'number') {
+          if (typeof value !== 'number' || !Number.isFinite(value)) {
+            errors.push(`${where}: option "${key}" must be a finite number`);
+          } else if ((spec.min !== undefined && value < spec.min) || (spec.max !== undefined && value > spec.max)) {
+            errors.push(`${where}: option "${key}" out of range [${spec.min}, ${spec.max}]`);
+          }
+        } else if (spec.type === 'boolean') {
+          if (typeof value !== 'boolean') errors.push(`${where}: option "${key}" must be a boolean`);
+        } else if (spec.type === 'text') {
+          if (typeof value !== 'string') errors.push(`${where}: option "${key}" must be a string`);
+        } else if (spec.type === 'choice') {
+          if (!(spec.choices ?? []).some((c) => c.value === value)) {
+            errors.push(`${where}: option "${key}" must be one of the allowed choices`);
+          }
         }
       }
     }

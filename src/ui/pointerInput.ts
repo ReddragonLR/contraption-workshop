@@ -103,6 +103,45 @@ export class PointerInput {
     };
   }
 
+  /**
+   * Keyboard placement: drop the bin part near the scene centre (scanning for
+   * a free spot), select it, and focus the canvas so arrow keys nudge it and
+   * [ ] rotate it. Gives a full no-pointer build path (PRD §10).
+   */
+  keyboardPlace(slotIndex: number): void {
+    const c = this.controller;
+    const slot = c.bin[slotIndex];
+    if (!slot || !c.scene || !c.editing) return;
+    if (getPart(slot.partId).connector) {
+      showToast('Ropes are tied with the mouse — keyboard placement isn’t supported yet.');
+      return;
+    }
+    const cx = snap(c.scene.world.width / 2, GRID);
+    const cy = snap(c.scene.world.height / 2, GRID);
+    // Spiral outward from centre until a non-overlapping spot is found.
+    for (let r = 0; r <= 240; r += GRID) {
+      for (const [dx, dy] of [
+        [0, 0],
+        [0, -r],
+        [r, 0],
+        [0, r],
+        [-r, 0],
+        [r, -r],
+        [-r, -r],
+        [r, r],
+        [-r, r],
+      ]) {
+        if (c.placeFromBin(slotIndex, cx + dx, cy + dy, 0)) {
+          this.canvas.focus();
+          showToast('Placed — use arrow keys to move, [ and ] to rotate.');
+          this.positionToolbar();
+          return;
+        }
+      }
+    }
+    showToast('No open space to place it.');
+  }
+
   /** All tie-able anchor points in the current scene (world coords). */
   private anchorPoints(): AnchorHit[] {
     const out: AnchorHit[] = [];
@@ -426,6 +465,15 @@ export class PointerInput {
       case ']':
         if (c.selectedId && c.editing) this.tryRotate(c.selectedId, ROT_STEP);
         break;
+      case 'ArrowLeft':
+      case 'ArrowRight':
+      case 'ArrowUp':
+      case 'ArrowDown':
+        if (c.selectedId && c.editing) {
+          e.preventDefault();
+          this.nudgeSelected(e.key, e.shiftKey ? GRID * 3 : GRID);
+        }
+        break;
       case 'Escape':
         if (this.ropeFlow) {
           this.ropeFlow = null;
@@ -437,4 +485,16 @@ export class PointerInput {
         break;
     }
   };
+
+  private nudgeSelected(key: string, step: number): void {
+    const c = this.controller;
+    const p = c.selectedId ? c.placementById(c.selectedId) : null;
+    if (!p) return;
+    const dx = key === 'ArrowLeft' ? -step : key === 'ArrowRight' ? step : 0;
+    const dy = key === 'ArrowUp' ? -step : key === 'ArrowDown' ? step : 0;
+    if (!c.moveTo(p.instanceId, p.x + dx, p.y + dy)) {
+      // Blocked that way (edge or overlap); keep the part where it is.
+      this.positionToolbar();
+    }
+  }
 }

@@ -21,13 +21,18 @@ export function getCustomLevel(id: string): LevelDef | undefined {
 export function saveCustomLevel(def: LevelDef): void {
   const all = Object.fromEntries(savedCustomLevels().map((l) => [l.id, l]));
   all[def.id] = def;
+  // Throws on quota/private-mode; the editor surfaces this to the user.
   localStorage.setItem(KEY, JSON.stringify(all));
 }
 
 export function deleteCustomLevel(id: string): void {
   const all = Object.fromEntries(savedCustomLevels().map((l) => [l.id, l]));
   delete all[id];
-  localStorage.setItem(KEY, JSON.stringify(all));
+  try {
+    localStorage.setItem(KEY, JSON.stringify(all));
+  } catch {
+    /* ignore */
+  }
 }
 
 export function customLevelId(title: string): string {

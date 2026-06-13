@@ -47,6 +47,8 @@ export class Toolbox {
     root: HTMLElement,
     private controller: GameController,
     private onDragStart: (start: BinDragStart) => void,
+    /** Keyboard activation (Enter/Space on a tile): place at the grid cursor. */
+    private onActivate: (slotIndex: number) => void,
   ) {
     this.root = root;
     controller.on('change', () => this.refreshCounts());
@@ -121,6 +123,16 @@ export class Toolbox {
         clientX: e.clientX,
         clientY: e.clientY,
       });
+    });
+    // Keyboard placement: Enter/Space drops the part at the grid cursor, then
+    // arrow keys nudge and [ ] rotate it (handled in PointerInput).
+    tile.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      const s = this.controller.bin[slotIndex];
+      if (!s || s.count <= 0 || !this.controller.editing) return;
+      e.preventDefault();
+      e.stopPropagation();
+      this.onActivate(slotIndex);
     });
     return tile;
   }

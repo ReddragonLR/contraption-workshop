@@ -19,8 +19,41 @@ function buildScene(): Simulation {
   return new Simulation({ width: 960, height: 600, gravity: { x: 0, y: 1 } }, placements);
 }
 
-function runHash(steps: number): string {
-  const sim = buildScene();
+/**
+ * A scene exercising every force-applying step hook — fan (applyForce),
+ * conveyor (setVelocity on contact), balloon (buoyancy), trampoline (kick),
+ * seesaw (pivot constraint), rope-over-pulley (positional solver), and a
+ * powered button. These are exactly the parts where nondeterminism could
+ * hide, so the hash assertion must cover them (review hardening, PRD §6).
+ */
+function buildActiveScene(): Simulation {
+  const f = new PlacementFactory();
+  const placements = [
+    f.make('fan', 120, 520, { options: { startsOn: true } }),
+    f.make('conveyor', 470, 330, { options: { direction: 'right', speed: 4 } }),
+    f.make('balloon', 300, 470, { tag: 'balloon-a' }),
+    f.make('trampoline', 700, 560),
+    f.make('seesaw', 500, 200),
+    f.make('button', 760, 586, { options: { powers: 'dev-1' } }),
+    f.make('wall', 250, 200, { tag: 'anchor', rotation: 90 }),
+    f.make('pulley', 350, 120, { tag: 'pulley-a' }),
+    f.make('basketball', 240, 60),
+    f.make('bowling-ball', 520, 40),
+    f.make('tennis-ball', 700, 60),
+    f.make('rope', 300, 150, {
+      tag: 'rope-a',
+      link: {
+        a: { ref: 'balloon-a', anchorId: 'knot' },
+        b: { ref: 'anchor', anchorId: 'center' },
+        via: ['pulley-a'],
+      },
+    }),
+  ];
+  return new Simulation({ width: 960, height: 600, gravity: { x: 0, y: 1 } }, placements);
+}
+
+function runHash(steps: number, build: () => Simulation = buildScene): string {
+  const sim = build();
   for (let i = 0; i < steps; i++) sim.step();
   const hash = sim.snapshotHash();
   sim.destroy();
@@ -32,6 +65,14 @@ describe('determinism (PRD §6)', () => {
     const a = runHash(600);
     const b = runHash(600);
     const c = runHash(600);
+    expect(a).toBe(b);
+    expect(b).toBe(c);
+  });
+
+  it('is deterministic for force-applying parts (fan/conveyor/balloon/rope/seesaw/trampoline/button)', () => {
+    const a = runHash(600, buildActiveScene);
+    const b = runHash(600, buildActiveScene);
+    const c = runHash(600, buildActiveScene);
     expect(a).toBe(b);
     expect(b).toBe(c);
   });

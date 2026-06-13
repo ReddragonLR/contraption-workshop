@@ -18,7 +18,10 @@ function dirOf(rt: PartRuntime): number {
 }
 
 function speedOf(rt: PartRuntime): number {
-  return Number(rt.placement.options.speed ?? 3);
+  // Clamp to the configured range and never let a malformed option (NaN)
+  // reach the physics step — a NaN velocity permanently corrupts the world.
+  const s = Number(rt.placement.options.speed ?? 3);
+  return Number.isFinite(s) ? Math.max(1, Math.min(5, s)) : 3;
 }
 
 function drawRollers(g: CanvasRenderingContext2D): void {

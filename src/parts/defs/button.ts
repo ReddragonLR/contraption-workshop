@@ -36,8 +36,7 @@ export const button: PartDefinition = {
     {
       key: 'powers',
       label: 'Powers device (tag)',
-      type: 'choice',
-      choices: [{ value: '', label: '(none)' }],
+      type: 'text',
       default: '',
     },
   ],

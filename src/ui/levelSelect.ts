@@ -14,11 +14,19 @@ export function showLevelSelect(
     const card = document.createElement('button');
     card.className = 'level-card';
     card.dataset.testid = `level-card-${id}`;
-    card.innerHTML = `
-      <span class="num">${num}</span>
-      <span class="name">${title}</span>
-      <span class="check">${solved.has(id) ? '✓ Solved' : ''}</span>
-    `;
+    // Build with textContent — titles come from untrusted level JSON, so never
+    // interpolate them into innerHTML (would be a stored-XSS sink).
+    const mk = (cls: string, text: string): HTMLElement => {
+      const el = document.createElement('span');
+      el.className = cls;
+      el.textContent = text;
+      return el;
+    };
+    card.append(
+      mk('num', num),
+      mk('name', title),
+      mk('check', solved.has(id) ? '✓ Solved' : ''),
+    );
     card.addEventListener('click', () => {
       closeModal();
       onPick(id);

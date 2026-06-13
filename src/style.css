@@ -300,6 +300,10 @@ canvas#game-canvas {
   border-radius: 8px;
   touch-action: none;
 }
+canvas#game-canvas:focus-visible {
+  outline: 3px solid var(--brass);
+  outline-offset: 2px;
+}
 
 /* Floating selection toolbar */
 .sel-toolbar {

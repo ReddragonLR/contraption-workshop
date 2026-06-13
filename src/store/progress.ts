@@ -15,9 +15,18 @@ export function solvedLevels(): Set<string> {
 export function markSolved(levelId: string): void {
   const solved = solvedLevels();
   solved.add(levelId);
-  localStorage.setItem(KEY, JSON.stringify({ solved: [...solved].sort() }));
+  // Never let a storage failure (private mode, quota) abort the win flow.
+  try {
+    localStorage.setItem(KEY, JSON.stringify({ solved: [...solved].sort() }));
+  } catch {
+    /* progress just won't persist this session */
+  }
 }
 
 export function clearProgress(): void {
-  localStorage.removeItem(KEY);
+  try {
+    localStorage.removeItem(KEY);
+  } catch {
+    /* ignore */
+  }
 }

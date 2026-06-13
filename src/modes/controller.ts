@@ -244,9 +244,15 @@ export class GameController extends Emitter<ControllerEvents> {
     const p = this.placementById(instanceId);
     if (!p || !p.fromBin) return false;
     this.placements = this.placements.filter((q) => q.instanceId !== instanceId);
-    // Ropes tied to this part vanish with it.
+    // Ropes tied to this part vanish with it — including ropes merely routed
+    // over it (link.via, e.g. a deleted pulley). via refs may be tag or id.
     this.placements = this.placements.filter((q) => {
-      const tied = q.link && (q.link.a.ref === instanceId || q.link.b.ref === instanceId);
+      const link = q.link;
+      const tied =
+        !!link &&
+        (link.a.ref === instanceId ||
+          link.b.ref === instanceId ||
+          (link.via ?? []).some((v) => v === instanceId || v === p.tag));
       if (tied && q.fromBin && q.binSlot !== undefined && this.bin[q.binSlot]) {
         this.bin[q.binSlot].count++;
       }

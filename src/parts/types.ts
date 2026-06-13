@@ -7,7 +7,8 @@ export type OptionValue = string | number | boolean;
 export interface ConfigOptionSpec {
   key: string;
   label: string;
-  type: 'boolean' | 'choice' | 'number';
+  /** 'text' is a free-form string (e.g. a device tag a button powers). */
+  type: 'boolean' | 'choice' | 'number' | 'text';
   choices?: { value: OptionValue; label: string }[];
   min?: number;
   max?: number;

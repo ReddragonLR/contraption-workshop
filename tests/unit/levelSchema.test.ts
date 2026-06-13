@@ -70,6 +70,45 @@ describe('level schema (PRD §8, §13.1)', () => {
     expect(() => validateLevel(bad)).toThrow(/count must be a non-negative integer/);
   });
 
+  it('rejects malformed part option values (NaN/garbage cannot reach the sim)', () => {
+    const bad = baseLevel();
+    bad.bin.push({ partId: 'conveyor', count: 1 });
+    bad.fixedParts.push({
+      partId: 'conveyor',
+      x: 480,
+      y: 300,
+      tag: 'belt',
+      options: { speed: 'fast', direction: 'sideways' },
+    } as never);
+    expect(() => validateLevel(bad)).toThrow(/option "speed" must be a finite number/);
+    expect(() => validateLevel(bad)).toThrow(/option "direction" must be one of/);
+  });
+
+  it('rejects out-of-range and unknown options', () => {
+    const bad = baseLevel();
+    bad.fixedParts.push({
+      partId: 'conveyor',
+      x: 480,
+      y: 300,
+      tag: 'belt',
+      options: { speed: 99, bogus: true },
+    } as never);
+    expect(() => validateLevel(bad)).toThrow(/option "speed" out of range/);
+    expect(() => validateLevel(bad)).toThrow(/unknown option "bogus"/);
+  });
+
+  it('accepts a free-form text option (button powers tag)', () => {
+    const ok = baseLevel();
+    ok.fixedParts.push({
+      partId: 'button',
+      x: 480,
+      y: 580,
+      tag: 'btn',
+      options: { powers: 'some-fan-tag' },
+    } as never);
+    expect(() => validateLevel(ok)).not.toThrow();
+  });
+
   it('rejects rope links referencing unknown tags', () => {
     const bad = baseLevel();
     bad.fixedParts.push({

@@ -482,9 +482,9 @@ export class LevelEditor {
     for (const key of ['objectTag', 'deviceTag', 'tagA', 'tagB'] as const) {
       const sel = this.q<HTMLSelectElement>(key);
       const current = this.draft[key];
-      sel.innerHTML =
-        '<option value="">— pick —</option>' +
-        tags.map((t) => `<option value="${t}">${t}</option>`).join('');
+      // Tags come from untrusted level JSON — build options as DOM nodes with
+      // textContent rather than interpolating into innerHTML (XSS sink).
+      sel.replaceChildren(makeOption('', '— pick —'), ...tags.map((t) => makeOption(t, t)));
       sel.value = tags.includes(current) ? current : '';
       this.draft[key] = sel.value;
     }
@@ -492,32 +492,37 @@ export class LevelEditor {
 
   private refreshBinRows(): void {
     const host = this.q('binRows');
-    host.innerHTML = '';
-    const partOptions = allParts()
-      .filter((d) => d.movableByPlayer && !d.connector)
-      .map((d) => `<option value="${d.id}">${d.name}</option>`)
-      .join('');
+    host.replaceChildren();
+    const partDefs = allParts().filter((d) => d.movableByPlayer && !d.connector);
     this.draft.bin.forEach((row, i) => {
       const div = document.createElement('div');
       div.className = 'ed-bin-row';
-      div.innerHTML = `
-        <select>${partOptions}</select>
-        <input type="number" min="0" max="20" value="${row.count}">
-        <button title="Remove">✕</button>
-      `;
-      const sel = div.querySelector('select')!;
+
+      const sel = document.createElement('select');
+      sel.replaceChildren(...partDefs.map((d) => makeOption(d.id, d.name)));
       sel.value = row.partId;
       sel.addEventListener('change', () => {
         row.partId = sel.value;
       });
-      const num = div.querySelector('input')!;
+
+      const num = document.createElement('input');
+      num.type = 'number';
+      num.min = '0';
+      num.max = '20';
+      num.value = String(row.count);
       num.addEventListener('input', () => {
         row.count = Math.max(0, Math.min(20, Number(num.value) || 0));
       });
-      div.querySelector('button')!.addEventListener('click', () => {
+
+      const del = document.createElement('button');
+      del.title = 'Remove';
+      del.textContent = '✕';
+      del.addEventListener('click', () => {
         this.draft.bin.splice(i, 1);
         this.refreshBinRows();
       });
+
+      div.append(sel, num, del);
       host.appendChild(div);
     });
   }
@@ -534,6 +539,13 @@ export class LevelEditor {
     }
     this.refreshTagSelects();
   }
+}
+
+function makeOption(value: string, label: string): HTMLOptionElement {
+  const opt = document.createElement('option');
+  opt.value = value;
+  opt.textContent = label;
+  return opt;
 }
 
 function normRect(a: { x: number; y: number }, b: { x: number; y: number }): Rect {

@@ -9,10 +9,28 @@ export interface ModalAction {
 }
 
 let openModal: HTMLElement | null = null;
+let modalKeydown: ((e: KeyboardEvent) => void) | null = null;
+let restoreFocus: HTMLElement | null = null;
+
+function focusable(root: HTMLElement): HTMLElement[] {
+  return [
+    ...root.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+    ),
+  ].filter((el) => !el.hasAttribute('disabled'));
+}
 
 export function closeModal(): void {
+  if (modalKeydown) {
+    document.removeEventListener('keydown', modalKeydown, true);
+    modalKeydown = null;
+  }
+  document.getElementById('app')?.removeAttribute('aria-hidden');
   openModal?.remove();
   openModal = null;
+  // Restore focus to wherever it was before the modal opened (PRD §10).
+  restoreFocus?.focus();
+  restoreFocus = null;
 }
 
 export function showModal(opts: {
@@ -55,9 +73,36 @@ export function showModal(opts: {
   }
   modal.appendChild(actions);
   backdrop.appendChild(modal);
+  restoreFocus = document.activeElement as HTMLElement | null;
   document.body.appendChild(backdrop);
   openModal = backdrop;
-  (actions.querySelector('button.primary') as HTMLButtonElement | null)?.focus();
+  // Background is inert while the dialog is open, so aria-modal is truthful.
+  document.getElementById('app')?.setAttribute('aria-hidden', 'true');
+
+  // Keyboard: Escape closes; Tab/Shift+Tab cycle within the dialog (focus trap).
+  modalKeydown = (e: KeyboardEvent): void => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      closeModal();
+    } else if (e.key === 'Tab') {
+      const items = focusable(modal);
+      if (items.length === 0) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      const active = document.activeElement as HTMLElement;
+      if (e.shiftKey && (active === first || !modal.contains(active))) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+  };
+  document.addEventListener('keydown', modalKeydown, true);
+
+  const primary = actions.querySelector('button.primary') as HTMLButtonElement | null;
+  (primary ?? focusable(modal)[0])?.focus();
   return backdrop;
 }
 

@@ -33,7 +33,7 @@ app.innerHTML = `
   <aside class="bin" aria-label="Parts bin"></aside>
   <main class="stage">
     <div class="canvas-wrap">
-      <canvas id="game-canvas" aria-label="Play area"></canvas>
+      <canvas id="game-canvas" aria-label="Play area. Use the parts bin to add parts; arrow keys move a selected part, brackets rotate it." tabindex="0"></canvas>
     </div>
   </main>
   <footer class="bottombar"></footer>
@@ -124,7 +124,12 @@ controller.on('runState', (rs) => {
 });
 
 const pointer = new PointerInput(canvas, wrap, controller, renderer, hooks);
-new Toolbox(document.querySelector('.bin')!, controller, (start) => pointer.beginBinDrag(start));
+new Toolbox(
+  document.querySelector('.bin')!,
+  controller,
+  (start) => pointer.beginBinDrag(start),
+  (slotIndex) => pointer.keyboardPlace(slotIndex),
+);
 new Hud(
   document.querySelector('.topbar')!,
   document.querySelector('.bottombar')!,
