@@ -22,12 +22,30 @@ flat-vector art style. No copyrighted assets from the original game are used.
 
 ## Getting started
 
-Prerequisites: **Node 20+** (see `.nvmrc`), npm.
+Prerequisites: **Node 20+** (see `.nvmrc`), npm. Optional: [`just`](https://github.com/casey/just).
 
 ```bash
 npm install
 npm run dev        # dev server at http://localhost:5173
 ```
+
+### Single entry point: `just`
+
+A root `justfile` is the canonical local-dev entrypoint. Because the game is fully
+client-side, `just dev` (alias `just up`) starts the entire local stack — there are no
+backend services to orchestrate. Run `just` with no arguments to list every recipe:
+
+```bash
+just dev        # start the local stack (Vite dev server)
+just build      # type-check + production build
+just preview    # serve the production build at :4173
+just test       # unit tests
+just test-e2e   # Playwright E2E (auto-builds + serves)
+just check      # lint + unit + e2e — the pre-deploy gate
+just deploy     # gated build + Firebase deploy (just deploy my-project to override)
+```
+
+Each recipe wraps the matching npm script below, so either tool works.
 
 ## Scripts
 
